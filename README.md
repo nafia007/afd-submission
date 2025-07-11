@@ -67,3 +67,4 @@ Simply open [Lovable](https://lovable.dev/projects/2bd797de-0268-4d69-8472-9041b
 ## I want to use a custom domain - is that possible?
 
 We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+# afd-submissions
