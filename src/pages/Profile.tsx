@@ -50,14 +50,11 @@ const Profile = () => {
   const [isSubmissionDialogOpen, setIsSubmissionDialogOpen] = useState(false);
   const [activeSubmissionTab, setActiveSubmissionTab] = useState("url");
 
-  console.log("Profile page - user:", user, "authLoading:", authLoading);
-
   const fetchUserProfile = useCallback(async () => {
     if (!user) return;
 
     setLoadingProfile(true);
     try {
-      console.log("Fetching profile for user:", user.id);
       const { data, error } = await supabase
         .from('filmmaker_profiles')
         .select('*')
@@ -70,7 +67,6 @@ const Profile = () => {
         return;
       }
 
-      console.log("Profile data:", data);
       setUserProfile(data);
     } catch (error) {
       console.error('Error fetching profile:', error);
