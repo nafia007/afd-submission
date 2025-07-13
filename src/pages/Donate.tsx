@@ -31,9 +31,10 @@ export default function Donate() {
       });
       setAccount(accounts[0]);
       toast.success('Wallet connected!');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error connecting wallet:', error);
-      toast.error('Failed to connect wallet');
+      const errorMessage = (error as EthereumError)?.message || 'Failed to connect wallet';
+      toast.error(errorMessage);
     }
     setLoading(false);
   };
@@ -53,42 +54,104 @@ export default function Donate() {
     try {
       if (network === 'SOL') {
         toast.error('Solana support coming soon');
+        setLoading(false);
         return;
       }
       
       if (network === 'BTC') {
         toast.error('Bitcoin donations require manual transfer');
+        setLoading(false);
         return;
       }
       
       // First check if wallet is connected to the correct network
-      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+      let chainId;
+      try {
+        chainId = await window.ethereum.request({ method: 'eth_chainId' });
+      } catch (chainError: unknown) {
+        console.error('Failed to get chain ID:', chainError);
+        toast.error('Failed to get network information');
+        setLoading(false);
+        return;
+      }
+      
       const requiredChainId = network === 'ETH' ? '0x1' : '0x89';
       
       if (chainId !== requiredChainId) {
         toast.error(`Please switch to ${network === 'ETH' ? 'Ethereum Mainnet' : 'Polygon Mainnet'} first`);
+        setLoading(false);
         return;
       }
       
-      // Convert amount to wei (1 ETH = 10^18 wei)
-      const valueInWei = Math.floor(Number(amount) * 1e18).toString(16);
-      const valueHex = '0x' + valueInWei;
+      // Convert amount to wei using BigInt for precision
+      let valueHex;
+      try {
+        const amountStr = amount.toString();
+        const [whole, decimal = ''] = amountStr.split('.');
+        const paddedDecimal = decimal.padEnd(18, '0').slice(0, 18);
+        const valueInWei = BigInt(whole + paddedDecimal);
+        valueHex = '0x' + valueInWei.toString(16);
+      } catch (conversionError: unknown) {
+        console.error('Amount conversion error:', conversionError);
+        toast.error('Invalid amount format');
+        setLoading(false);
+        return;
+      }
+      
+      // Get current gas price
+      let gasPrice;
+      try {
+        gasPrice = await window.ethereum.request({ method: 'eth_gasPrice' });
+      } catch (gasPriceError: unknown) {
+        console.error('Failed to get gas price:', gasPriceError);
+        // Fallback to a reasonable gas price
+        gasPrice = '0x3b9aca00'; // 1 gwei
+      }
+      
+      const txParams = {
+        from: account,
+        to: walletAddresses[network as keyof typeof walletAddresses],
+        value: valueHex,
+        gasLimit: '0x5208', // 21000 gas for simple transfer
+        gasPrice: gasPrice
+      };
+      
+      console.log('Transaction parameters:', txParams);
       
       const txHash = await window.ethereum.request({
         method: 'eth_sendTransaction',
-        params: [{
-          from: account,
-          to: walletAddresses[network],
-          value: valueHex,
-          gasLimit: '0x5208',
-          gasPrice: '0x3b9aca00'
-        }]
+        params: [txParams]
       });
       
       toast.success(`Success! Transaction hash: ${txHash}`);
-    } catch (error) {
+      setAmount(''); // Clear the amount after successful transaction
+      
+    } catch (error: unknown) {
       console.error('Donation failed:', error);
-      toast.error(`Donation failed: ${error.message}`);
+      
+      // Handle different types of errors
+      let errorMessage = 'Transaction failed';
+      
+      if (error && typeof error === 'object') {
+        const ethError = error as EthereumError;
+        if (ethError.code === 4001) {
+          errorMessage = 'Transaction rejected by user';
+        } else if (ethError.code === -32603) {
+          errorMessage = 'Internal JSON-RPC error';
+        } else if (ethError.code === -32602) {
+          errorMessage = 'Invalid transaction parameters';
+        } else if (ethError.code === -32000) {
+          errorMessage = 'Insufficient funds for gas';
+        } else if (ethError.message) {
+          errorMessage = ethError.message;
+        } else if (ethError.reason) {
+          errorMessage = ethError.reason;
+        }
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      toast.error(`Donation failed: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -143,13 +206,15 @@ export default function Donate() {
                   placeholder="0.1" 
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
+                  step="0.001"
+                  min="0"
                 />
               </div>
               
               <div className="space-y-2">
                 <label className="text-sm font-medium">Recipient Address</label>
                 <Input 
-                  value={walletAddresses[network]}
+                  value={walletAddresses[network as keyof typeof walletAddresses]}
                   readOnly
                   className="font-mono text-sm"
                 />
@@ -158,9 +223,9 @@ export default function Donate() {
               <Button 
                 className="w-full" 
                 onClick={handleDonate}
-                disabled={!account || !amount}
+                disabled={!account || !amount || loading}
               >
-                Donate Now
+                {loading ? 'Processing...' : 'Donate Now'}
               </Button>
             </CardContent>
           </Card>

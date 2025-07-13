@@ -1,15 +1,18 @@
-
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { User, Mail, Edit, FileText, Calendar, ExternalLink, BarChart3, ArrowDownUp } from "lucide-react";
+import { User, Mail, Edit, FileText, Calendar, ExternalLink, BarChart3, ArrowDownUp, Film, Upload, Link as LinkIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import ProfileForm from "@/components/profile/ProfileForm";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FileSubmissionForm } from "@/components/film-submission/FileSubmissionForm";
+import { UrlSubmissionForm } from "@/components/film-submission/UrlSubmissionForm";
 
 interface UserProfile {
   id: string;
@@ -44,24 +47,12 @@ const Profile = () => {
   const [afdSubmissions, setAfdSubmissions] = useState<AFDSubmission[]>([]);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+  const [isSubmissionDialogOpen, setIsSubmissionDialogOpen] = useState(false);
+  const [activeSubmissionTab, setActiveSubmissionTab] = useState("url");
 
   console.log("Profile page - user:", user, "authLoading:", authLoading);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      console.log("No user found, redirecting to login");
-      navigate('/login');
-    }
-  }, [user, authLoading, navigate]);
-
-  useEffect(() => {
-    if (user && !authLoading) {
-      fetchUserProfile();
-      fetchAfdSubmissions();
-    }
-  }, [user, authLoading]);
-
-  const fetchUserProfile = async () => {
+  const fetchUserProfile = useCallback(async () => {
     if (!user) return;
 
     setLoadingProfile(true);
@@ -87,9 +78,9 @@ const Profile = () => {
     } finally {
       setLoadingProfile(false);
     }
-  };
+  }, [user]);
 
-  const fetchAfdSubmissions = async () => {
+  const fetchAfdSubmissions = useCallback(async () => {
     if (!user) return;
 
     setLoadingSubmissions(true);
@@ -113,7 +104,27 @@ const Profile = () => {
     } finally {
       setLoadingSubmissions(false);
     }
+  }, [user]);
+
+  const handleFilmSubmissionSuccess = () => {
+    toast.success("Film submitted successfully!", {
+      description: "Your film has been added to the marketplace.",
+    });
+    setIsSubmissionDialogOpen(false);
+    // You might want to trigger a refresh of a film list here
   };
+
+  useEffect(() => {
+    if (!authLoading) {
+      if (user) {
+        fetchUserProfile();
+        fetchAfdSubmissions();
+      } else {
+        console.log("No user found, redirecting to login");
+        navigate('/login');
+      }
+    }
+  }, [user, authLoading, navigate, fetchUserProfile, fetchAfdSubmissions]);
 
   if (authLoading || (loadingProfile && loadingSubmissions)) {
     return (
@@ -137,10 +148,49 @@ const Profile = () => {
         <div className="max-w-2xl mx-auto space-y-6">
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold">Profile</h1>
-            <Button variant="outline" className="gap-2">
-              <Edit className="w-4 h-4" />
-              Edit Profile
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" className="gap-2">
+                <Edit className="w-4 h-4" />
+                Edit Profile
+              </Button>
+              <Dialog open={isSubmissionDialogOpen} onOpenChange={setIsSubmissionDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2">
+                    <Film className="w-4 h-4" />
+                    Submit Film Project
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[625px]">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <Film className="w-6 h-6" />
+                      Film Submission Portal
+                    </DialogTitle>
+                    <DialogDescription>
+                      Choose how you'd like to submit your film - either upload directly or provide a URL.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <Tabs value={activeSubmissionTab} onValueChange={setActiveSubmissionTab} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="url" className="flex items-center gap-2">
+                        <LinkIcon className="w-4 h-4" />
+                        URL Submission
+                      </TabsTrigger>
+                      <TabsTrigger value="file" className="flex items-center gap-2">
+                        <Upload className="w-4 h-4" />
+                        File Upload
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="url" className="mt-6">
+                      <UrlSubmissionForm onSuccess={handleFilmSubmissionSuccess} />
+                    </TabsContent>
+                    <TabsContent value="file" className="mt-6">
+                      <FileSubmissionForm onSuccess={handleFilmSubmissionSuccess} />
+                    </TabsContent>
+                  </Tabs>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
           <Card>
             <CardHeader>
@@ -215,9 +265,16 @@ const Profile = () => {
           {/* AFD Submissions Section */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                AFD Submissions
+              <CardTitle className="flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  AFD Submissions
+                </span>
+                <Link to="/afd">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    Submit to AFD
+                  </Button>
+                </Link>
               </CardTitle>
             </CardHeader>
             <CardContent>

@@ -29,7 +29,7 @@ const TIER_LABELS: Record<Tier, string> = {
 
 export default function AFDSubmissions() {
   const [activeTier, setActiveTier] = useState<Tier | "all">("all");
-  const { data, isLoading, refetch } = useQuery<AFDEntry[]>({
+  const { data, isLoading } = useQuery<AFDEntry[]>({
     queryKey: ["afd-submissions", activeTier],
     queryFn: async () => {
       let query = supabase.from("afd_submissions").select("*").order("created_at", { ascending: false });
@@ -44,7 +44,6 @@ export default function AFDSubmissions() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <AFDUploadForm onSuccess={refetch} />
       <div className="mb-6 flex flex-wrap gap-2 items-center">
         <button
           className={`px-3 py-1 rounded border text-sm ${activeTier === "all" ? "bg-accent font-bold" : "bg-muted"}`}
