@@ -24,6 +24,8 @@ import FilmSubmission from "./pages/FilmSubmission";
 import AFD from "./pages/AFD";
 import Analytics from "./pages/Analytics";
 import Donate from "./pages/Donate";
+import ResetPassword from "./pages/ResetPassword";
+import ForgotPassword from "./pages/ForgotPassword";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -61,6 +63,8 @@ const App = () => (
                     <Route path="/afd" element={<AFD />} />
                     <Route path="/analytics" element={<Analytics />} />
                     <Route path="/donate" element={<Donate />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="*" element={<Index />} />
                   </Routes>
                 </main>

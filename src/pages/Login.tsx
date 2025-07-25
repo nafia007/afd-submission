@@ -1,12 +1,11 @@
-
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useGoogleLogin } from '@react-oauth/google';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -50,40 +49,28 @@ const Login = () => {
         console.log("Sign in successful:", data);
         navigate('/');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Authentication failed";
       console.error("Authentication error:", error);
-      toast.error(error.message || "Authentication failed");
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
   // Google login integration
-  const googleLogin = useGoogleLogin({
-    onSuccess: async (response) => {
-      try {
-        // Get user info from Google
-        const userInfo = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-          headers: { Authorization: `Bearer ${response.access_token}` },
-        }).then(res => res.json());
-        
-        console.log("Google user info:", userInfo);
-        
-        // We'll use Supabase external OAuth in a more complete implementation
-        // For now, we'll just simulate a successful login
-        localStorage.setItem('user', JSON.stringify(userInfo));
-        toast.success("Successfully logged in with Google!");
-        navigate('/');
-      } catch (error) {
-        console.error("Google login error:", error);
-        toast.error("Failed to get user info");
-      }
-    },
-    onError: (error) => {
+  const handleGoogleLogin = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+      });
+      if (error) throw error;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Google login failed";
       console.error("Google login error:", error);
-      toast.error("Google login failed");
+      toast.error(errorMessage);
     }
-  });
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/20 via-primary/40 to-accent/20">
@@ -144,6 +131,35 @@ const Login = () => {
           </div>
         </form>
 
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-border" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-card px-2 text-muted-foreground">
+              Or continue with
+            </span>
+          </div>
+        </div>
+
+        <div>
+          <Button 
+            variant="outline" 
+            className="w-full" 
+            onClick={handleGoogleLogin}
+          >
+            Sign In with Google
+          </Button>
+        </div>
+
+        <div className="text-center">
+          <Link
+            to="/forgot-password"
+            className="text-sm font-medium text-muted-foreground hover:text-foreground"
+          >
+            Forgot Password?
+          </Link>
+        </div>
       </div>
     </div>
   );
