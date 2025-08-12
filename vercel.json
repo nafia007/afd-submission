@@ -16,6 +16,14 @@
       "dest": "/assets/$1"
     },
     {
+      "src": "/favicon.ico",
+      "dest": "/favicon.ico"
+    },
+    {
+      "src": "/og-image.png",
+      "dest": "/og-image.png"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
