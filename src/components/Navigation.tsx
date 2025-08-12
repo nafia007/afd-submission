@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, User, Users, BarChart3, Building, DollarSign } from "lucide-react";
+import { LogOut, User, Users, BarChart3, Building, DollarSign, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,16 +20,8 @@ const Navigation = () => {
   useEffect(() => {
     const checkAdminRole = async () => {
       if (user && !authLoading) {
-        try {
-          const {
-            data: profile
-          } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
-          console.log("User profile:", profile);
-          setIsAdmin(profile?.role === 'admin');
-        } catch (error) {
-          console.error("Error fetching profile:", error);
-          setIsAdmin(false);
-        }
+        // Check if user is admin by email (nafiakocks76@gmail.com)
+        setIsAdmin(user.email === 'nafiakocks76@gmail.com');
       } else {
         setIsAdmin(false);
       }
@@ -116,9 +108,17 @@ const Navigation = () => {
                 <DollarSign className="w-4 h-4" />
                 Donate
               </Link>
-              {isAdmin && <Link to="/dashboard" className="text-foreground/70 hover:text-accent transition-colors">
+              {isAdmin && (
+                <>
+                  <Link to="/admin" className="text-foreground/70 hover:text-accent transition-colors flex items-center gap-2">
+                    <Shield className="w-4 h-4" />
+                    Admin
+                  </Link>
+                  <Link to="/dashboard" className="text-foreground/70 hover:text-accent transition-colors">
                   Dashboard
-                </Link>}
+                  </Link>
+                </>
+              )}
             </div>
           </div>
 

@@ -23,6 +23,7 @@ import CreatorDashboard from "./pages/CreatorDashboard";
 import FilmSubmission from "./pages/FilmSubmission";
 import AFD from "./pages/AFD";
 import Analytics from "./pages/Analytics";
+import AdminDashboard from "./pages/AdminDashboard";
 import Donate from "./pages/Donate";
 import ResetPassword from "./pages/ResetPassword";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -55,6 +56,7 @@ const App = () => (
                     <Route path="/dex" element={<Dex />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/admin" element={<AdminDashboard />} />
                     <Route path="/creator-dashboard" element={<CreatorDashboard />} />
                     <Route path="/assets" element={<FilmAssetsDashboard />} />
                     <Route path="/asset-management" element={<AssetManagement />} />
